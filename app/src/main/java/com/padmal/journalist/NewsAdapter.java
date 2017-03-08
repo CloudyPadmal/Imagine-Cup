@@ -34,6 +34,8 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.Holder> {
         holder.newsHeader.setText(news.getNewsHeader());
         holder.newsBody.setText(news.getNewsBody());
         holder.newsBy.setText(news.getNewsBy());
+        holder.newsLat.setText(news.getLat());
+        holder.newsLon.setText(news.getLon());
     }
 
     @Override
@@ -43,13 +45,15 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.Holder> {
 
     public class Holder extends RecyclerView.ViewHolder {
 
-        public TextView newsHeader, newsBody, newsBy;
+        public TextView newsHeader, newsBody, newsBy, newsLat, newsLon;
 
         public Holder(View itemView) {
             super(itemView);
             newsHeader = (TextView) itemView.findViewById(R.id.news_header);
             newsBody = (TextView) itemView.findViewById(R.id.news_body);
             newsBy = (TextView) itemView.findViewById(R.id.news_by);
+            newsLat = (TextView) itemView.findViewById(R.id.news_lat);
+            newsLon = (TextView) itemView.findViewById(R.id.news_lon);
         }
     }
 }

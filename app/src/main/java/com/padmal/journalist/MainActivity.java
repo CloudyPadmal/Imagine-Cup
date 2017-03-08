@@ -1,8 +1,13 @@
 package com.padmal.journalist;
 
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,6 +25,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.gson.Gson;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -39,7 +47,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private final String TAG = "MQTT";
     private final String HOSTNAME = "tcp://broker.hivemq.com:1883";
@@ -50,7 +58,11 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView recyclerView;
     private NewsAdapter newsAdapter;
 
+    private GoogleApiClient mGoogleApiClient;
+
     private EditText topicText, Head, Body, By, Topiq;
+
+    private String Lat = "", Lon = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,12 +103,36 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         setupMQTT();
+        setupGoogleClient();
 
         newsAdapter = new NewsAdapter(newsItemList);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(newsAdapter);
+    }
+
+    @Override
+    protected void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
+
+    private void setupGoogleClient() {
+        // Create an instance of GoogleAPIClient.
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
     }
 
     @Override
@@ -132,6 +168,8 @@ public class MainActivity extends AppCompatActivity
                 item.setNewsHeader(news.getString("newsHeader"));
                 item.setNewsBody(news.getString("newsBody"));
                 item.setNewsBy(news.getString("newsBy"));
+                item.setLat(news.getString("Lat"));
+                item.setLon(news.getString("Lon"));
                 newsItemList.add(item);
                 newsAdapter.notifyDataSetChanged();
             }
@@ -181,6 +219,8 @@ public class MainActivity extends AppCompatActivity
         newsItem.setNewsHeader(Head.getText().toString());
         newsItem.setNewsBody(Body.getText().toString());
         newsItem.setNewsBy(By.getText().toString());
+        newsItem.setLat(Lat);
+        newsItem.setLon(Lon);
 
         Gson gson = new Gson();
         String msg = gson.toJson(newsItem);
@@ -260,6 +300,36 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation != null) {
+            Lat = String.valueOf(mLastLocation.getLatitude());
+            Lon = String.valueOf(mLastLocation.getLongitude());
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 
     // http://www.hivemq.com/demos/websocket-client/

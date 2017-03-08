@@ -10,6 +10,8 @@ public class NewsItem {
     private String newsBody;
     private String newsBy;
     private String topic;
+    private String Lat;
+    private String Lon;
 
     public String getNewsHeader() {
         return newsHeader;
@@ -33,5 +35,29 @@ public class NewsItem {
 
     public void setNewsBy(String newsBy) {
         this.newsBy = newsBy;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public String getLat() {
+        return Lat;
+    }
+
+    public void setLat(String lat) {
+        Lat = lat;
+    }
+
+    public String getLon() {
+        return Lon;
+    }
+
+    public void setLon(String lon) {
+        Lon = lon;
     }
 }
