@@ -13,8 +13,103 @@
     tools:context="com.padmal.journalist.MainActivity"
     tools:showIn="@layout/app_bar_main">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!" />
+    <LinearLayout
+        android:id="@+id/topic_base"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:background="#a0d0f5"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/input_layout_topic"
+            android:layout_width="0dp"
+            android:layout_weight="5"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/input_topic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Topic" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <Button
+            android:id="@+id/subscribeBtn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:text="Subscribe"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/news_content"
+        android:background="#70d29b"
+        android:layout_below="@id/topic_base"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/type_topic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Topic" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/type_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Header" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/type_by"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="By" />
+
+        </android.support.design.widget.TextInputLayout>
+
+    </LinearLayout>
+
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:id="@+id/news_body"
+        android:layout_below="@id/news_content"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/type_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Body" />
+
+    </android.support.design.widget.TextInputLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/news_body"
+        android:scrollbars="vertical" />
+
 </RelativeLayout>

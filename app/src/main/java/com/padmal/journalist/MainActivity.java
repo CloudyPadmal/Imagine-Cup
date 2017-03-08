@@ -3,6 +3,9 @@ package com.padmal.journalist;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -13,6 +16,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.google.gson.Gson;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -23,20 +31,26 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "MQTT";
-
-    private final String USERNAME = "Padmal";
-    private final String PASSWORD = "abc123";
     private final String HOSTNAME = "tcp://broker.hivemq.com:1883";
-    private final String CLIENT = "clientId-eS6FsVP6HB";
 
     private MqttAndroidClient client;
+
+    private List<NewsItem> newsItemList = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private NewsAdapter newsAdapter;
+
+    private EditText topicText, Head, Body, By, Topiq;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +58,26 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+
+        topicText = (EditText) findViewById(R.id.input_topic);
+        Head = (EditText) findViewById(R.id.type_header);
+        Body = (EditText) findViewById(R.id.type_body);
+        By = (EditText) findViewById(R.id.type_by);
+        Topiq = (EditText) findViewById(R.id.type_topic);
+        Button subscribeTopic = (Button) findViewById(R.id.subscribeBtn);
+        subscribeTopic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                subscribeMQTT(topicText.getText().toString());
+            }
+        });
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                publishMQTT();
+                publishMQTT(Topiq.getText().toString());
             }
         });
 
@@ -63,6 +91,12 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         setupMQTT();
+
+        newsAdapter = new NewsAdapter(newsItemList);
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        recyclerView.setLayoutManager(mLayoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(newsAdapter);
     }
 
     @Override
@@ -75,9 +109,9 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void subscribeMQTT() {
+    private void subscribeMQTT(String topic) {
         try {
-            client.subscribe("topic/imagine", 1);
+            client.subscribe(topic, 1);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -93,6 +127,13 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 Log.d(TAG, message.toString());
+                JSONObject news = new JSONObject(message.toString());
+                NewsItem item = new NewsItem();
+                item.setNewsHeader(news.getString("newsHeader"));
+                item.setNewsBody(news.getString("newsBody"));
+                item.setNewsBy(news.getString("newsBy"));
+                newsItemList.add(item);
+                newsAdapter.notifyDataSetChanged();
             }
 
             @Override
@@ -104,13 +145,12 @@ public class MainActivity extends AppCompatActivity
 
     private void setupMQTT() {
 
+        String clientId = MqttClient.generateClientId();
         client = new MqttAndroidClient(this.getApplicationContext(), HOSTNAME,
-                CLIENT);
+                clientId);
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-        //options.setUserName(USERNAME);
-        //options.setPassword(PASSWORD.toCharArray());
 
         try {
             IMqttToken token = client.connect();
@@ -118,18 +158,16 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     // We are connected
-                    Log.d(TAG, "onSuccess");
-                    subscribeMQTT();
+                    Toast.makeText(getBaseContext(), "Connected!", Toast.LENGTH_SHORT).show();
                     receivedMsg();
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     // Something went wrong e.g. connection timeout or firewall problems
-                    Log.d(TAG, "onFailure");
+                    Toast.makeText(getBaseContext(), "Connection Failure!", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, exception.getMessage());
                     exception.printStackTrace();
-
                 }
             });
         } catch (MqttException e) {
@@ -138,12 +176,18 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void publishMQTT() {
-        String topic = "topic/imagine";
-        String payload = "If i got this then that's it! ^_^";
+    private void publishMQTT(String topic) {
+        NewsItem newsItem = new NewsItem();
+        newsItem.setNewsHeader(Head.getText().toString());
+        newsItem.setNewsBody(Body.getText().toString());
+        newsItem.setNewsBy(By.getText().toString());
+
+        Gson gson = new Gson();
+        String msg = gson.toJson(newsItem);
+
         byte[] encodedPayload = new byte[0];
         try {
-            encodedPayload = payload.getBytes("UTF-8");
+            encodedPayload = msg.getBytes("UTF-8");
             MqttMessage message = new MqttMessage(encodedPayload);
             client.publish(topic, message);
         } catch (UnsupportedEncodingException | MqttException e) {
@@ -156,15 +200,13 @@ public class MainActivity extends AppCompatActivity
             subToken.setActionCallback(new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    Log.d(TAG, "SC");
+                    Toast.makeText(getBaseContext(), "Successful!", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken,
                                       Throwable exception) {
-                    // The subscription could not be performed, maybe the user was not
-                    // authorized to subscribe on the specified topic e.g. using wildcards
-                    Log.d(TAG, "S0");
+                    Toast.makeText(getBaseContext(), "Failed!", Toast.LENGTH_SHORT).show();
 
                 }
             });
